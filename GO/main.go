@@ -7,8 +7,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var wg sync.WaitGroup // instanciation de notre structure WaitGroup
 
 func Byte_To_String(CONTENT []byte) []string {
 	dataByLine := strings.Split(string(CONTENT), "\n")
@@ -50,15 +53,15 @@ func Produit(tab []int) {
 				elem2 := tab[j+k*size]
 				sum = sum + elem1*elem2
 			}
-			matprod = matprod + strconv.Itoa(sum) + "\t"
+			matprod = matprod + strconv.Itoa(sum) + " "
 		}
-		matprod = matprod + "\n\n"
+		matprod = matprod + "\n"
 	}
 	//fmt.Println(matprod)
 }
 
-func produit(tab []int, size int, i int) {
-
+func produit(ch chan string, tab []int, size int, i int) {
+	defer wg.Done()
 	matprod := ""
 	for j := 0; j < size; j++ {
 
@@ -68,10 +71,9 @@ func produit(tab []int, size int, i int) {
 			elem2 := tab[j+k*size]
 			sum = sum + elem1*elem2
 		}
-		matprod = matprod + strconv.Itoa(sum) + "\t"
+		matprod = matprod + strconv.Itoa(sum) + " "
 	}
-	matprod = matprod + "\n\n"
-	//fmt.Println(matprod)
+	ch <- matprod
 }
 
 func main() {
@@ -100,12 +102,15 @@ func main() {
 	fin := time.Now()
 	fmt.Println(fin.Sub(debut))
 
-	//p := ""
+	p := make(chan string)
 	size := int(math.Sqrt(float64(len(mat))))
 	debut2 := time.Now()
 	for i := 0; i < size; i++ {
-		go produit(mat, size, i)
+		wg.Add(1) // ajoute 1 goroutine à attendre
+		go produit(p, mat, size, i)
+		fmt.Println(<-p)
 	}
+	wg.Wait() // empêche l'exécution des lignes de code suivantes
 	fin2 := time.Now()
 	fmt.Println(fin2.Sub(debut2))
 }
