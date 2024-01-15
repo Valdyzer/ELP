@@ -100,17 +100,45 @@ func main() {
 	debut := time.Now()
 	Produit(mat)
 	fin := time.Now()
-	fmt.Println(fin.Sub(debut))
+	fmt.Println("Délai en concurrentiel :", fin.Sub(debut))
 
 	p := make(chan string)
 	size := int(math.Sqrt(float64(len(mat))))
+	prod := ""
 	debut2 := time.Now()
 	for i := 0; i < size; i++ {
 		wg.Add(1) // ajoute 1 goroutine à attendre
 		go produit(p, mat, size, i)
-		fmt.Println(<-p)
+		prod = prod + "\n" + <-p
 	}
-	wg.Wait() // empêche l'exécution des lignes de code suivantes
+	wg.Wait() // empêche l'exécution des lignes de code suivantes avant que toutes les goroutines se terminent
 	fin2 := time.Now()
-	fmt.Println(fin2.Sub(debut2))
+	fmt.Println("Délai en parallèle :", fin2.Sub(debut2), "\n")
+
+	// Création d'un fichier .txt et écriture du
+	f, err := os.Create("ProduitMat.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	f.WriteString(prod)
+	defer f.Close()
+
+	fmt.Println("Observez le résultat de matrice dans :", f.Name())
+	fmt.Println("Est-il juste ?")
+	var rep string
+	for (rep != "OUI") || (rep != "NON") {
+		fmt.Scanln(&rep)
+		rep = strings.ToUpper(rep)
+		if rep == "OUI" {
+			os.Remove(f.Name())
+			break
+		} else if rep == "NON" {
+			fmt.Println("AH SH*T, HERE WE GO AGAIN \n")
+			os.Remove(f.Name())
+			break
+		} else {
+			fmt.Println("Répondez par 'oui' ou par 'non'")
+		}
+	}
+
 }
