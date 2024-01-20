@@ -39,7 +39,3 @@ Both the server and client use standard Go libraries without external dependenci
 ## Contributing
 
 Contributions are welcome! If you find any issues or have suggestions, please open an issue or create a pull request.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
