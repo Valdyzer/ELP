@@ -2,27 +2,49 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"math"
 	"net"
+	"log"
 	"strconv"
 	"strings"
+	"math"
 	"sync"
 	"time"
 )
 
 type Server struct {
-	listenAddress string
-	ln            net.Listener
-	quitch        chan struct{}
+	listenAddress string 
+	ln 			  net.Listener 
+	quitch 		  chan struct{}
 }
 
-var wg sync.WaitGroup // instantiation of our WaitGroup structure
 
-func CreateServer(listenAddress string) *Server {
-	serverInstance := &Server{
-		listenAddress: listenAddress,
-		quitch:        make(chan struct{}),
+type WorkItem struct {
+	Row   int
+	MatrixLine []int
+}
+
+type ResultItem struct {
+	Row    int
+	Result string
+}
+
+
+var wg sync.WaitGroup
+
+
+func worker(id int, jobs <-chan WorkItem, results chan<- ResultItem, size int, mat []int) {
+	for job := range jobs {
+		//fmt.Printf("Worker %d processing job at row %d\n", id, job.Row)
+		result := produit(mat,size,job.Row)
+		results <- ResultItem{Row: job.Row, Result: result}
+	}
+}
+
+
+func CreateServer(listenAddress string ) *Server {
+	serverInstance := &Server {
+		listenAddress : listenAddress,
+		quitch : make(chan struct{}),
 	}
 	return serverInstance
 }
@@ -34,11 +56,11 @@ func (s *Server) Start() error {
 	}
 	defer ln.Close()
 	s.ln = ln
-
+	
 	go s.acceptConnection()
 
-	<-s.quitch
-
+	<- s.quitch
+	
 	return nil
 }
 
@@ -51,19 +73,21 @@ func (s *Server) acceptConnection() {
 		} else {
 			fmt.Println("\nConnection established with client. ")
 		}
-
+		
 		go s.readLoop(conn)
 	}
 }
 
 func (s *Server) readLoop(conn net.Conn) {
 	var globalBuffer []byte
-
+	var mat []int
+	var size int
+	
 	for {
 		buffer := make([]byte, 2048)
-		n, err := conn.Read(buffer)
+		n,err := conn.Read(buffer)
 		if err != nil {
-			fmt.Println("Error printing data: ", err)
+			fmt.Println("Error printing data: ",err)
 			continue
 		}
 		tempMatString := ""
@@ -72,33 +96,77 @@ func (s *Server) readLoop(conn net.Conn) {
 		if len(msg) > 0 {
 			globalBuffer = append(globalBuffer, msg...)
 		}
+		
+		//on teste si on a reçu la totalité de la matrice, pour signaler la fin d-une matrice on met la lettre z à la fin
+		if 	globalBuffer[len(globalBuffer)-1] =='z'{
 
-		// Check if we received the entire matrix; to signal the end of a matrix, we append the letter 'z' at the end
-		if globalBuffer[len(globalBuffer)-1] == 'z' {
 			timerStart := time.Now()
-			// Remove the term signaling the end of the matrix and start processing
-			globalBuffer = globalBuffer[:len(globalBuffer)-1]
-			fmt.Println("GlobalBuffer: " + string(globalBuffer[:8]) + "..." + string(globalBuffer[(len(globalBuffer)-9):]) + "\n")
+			//on retire le terme qui signale la fin de la matrice puis on commence le traitement
+			globalBuffer = globalBuffer[:len(globalBuffer)-1] 
+			fmt.Println("GlobalBuffer: "+ string(globalBuffer[:8]) + "..." + string(globalBuffer[(len(globalBuffer)-9):])+"\n")
 
 			tempMatString = string(globalBuffer)
 			multMatrice := ParseString(tempMatString)
-			mat := String_To_Int(multMatrice)
-			size := int(math.Sqrt(float64(len(mat))))
-			p := make(chan string)
+			mat = String_To_Int(multMatrice)
+			size = int(math.Sqrt(float64(len(mat))))
 
+
+
+			var numJobs = size
+			const numWorkers = 7
+		
+			// Create channels for jobs and results
+			jobs := make(chan WorkItem, numJobs)
+			results := make(chan ResultItem, numJobs)
+		
+			// Create worker goroutines
+			for i := 1; i <= numWorkers; i++ {
+				wg.Add(1)
+				go func(workerID int) {
+					defer wg.Done()
+					worker(workerID, jobs, results, size, mat)
+				}(i)
+			}
+		
+			// Decompose matrix in lines and add them to the jobs channel
+			//fmt.Println("Size of mat: ",len(mat),"\n",mat[size*0:size*(0+1)],"\n",mat[size*(size):size*(2999+1)])
+		
 			for i := 0; i < size; i++ {
-				wg.Add(1) // add 1 goroutine to wait
-				go produit(p, mat, size, i)
-				matriceString = matriceString + "\n" + <-p
+				//fmt.Println("Matrice line ",i,"=",mat[size*i:size*(i+1)])
+				jobs <- WorkItem{Row: i, MatrixLine: mat[size*i:size*(i+1)]}
+			}
+		
+			// Close the jobs channel to signal that no more jobs will be added
+			close(jobs)
+		
+			// Wait for all workers to finish processing
+			wg.Wait()
+		
+			// Close the results channel since all workers are done
+			close(results)
+		
+			// Collect and print the results in the correct order
+			resultMatrix := make([]string, numJobs)
+			for i := 0; i < numJobs; i++ {
+				result := <-results
+				resultMatrix[result.Row] = result.Result
+			}
+		
+			finalRes := ""
+		
+			for i := 0; i < len(resultMatrix); i++ {
+				//fmt.Println(i)
+				if  resultMatrix[i] == "" {	
+					print(i)
+				}else{
+					finalRes += resultMatrix[i] + "\n"
+				}
 			}
 
-			wg.Wait()
-			if matriceString[:1] == "\n" {
-				matriceString = matriceString[1:]
-			}
+			matriceString = finalRes
 			timerEnd := time.Now()
-			matriceString += "\nCalculation executed by the server in: " + timerEnd.Sub(timerStart).String() + "z"
-			fmt.Println("Message sent back: ", string(matriceString[:16])+"..."+string(matriceString[(len(matriceString)-51):])+"\n")
+			matriceString += "\nCalcul exécuté par le serveur en : " + timerEnd.Sub(timerStart).String() + "z"
+			fmt.Println("Message sent back: ", string(matriceString[:16]) + "..." + string(matriceString[(len(matriceString)-49):])+"\n")
 			_, err = conn.Write([]byte(matriceString))
 			conn.Close()
 			globalBuffer = nil
@@ -115,7 +183,7 @@ func ParseString(CONTENT string) []string {
 	for i := 0; i < len(dataByLine); i++ {
 		line = strings.Split(dataByLine[i], " ")
 		for j := 0; j < len(line); j++ {
-			if line[j] != "" {
+			if line[j] != "" {	
 				res = append(res, line[j])
 			}
 		}
@@ -135,9 +203,9 @@ func String_To_Int(DATA []string) []int {
 	return tab
 }
 
-func produit(ch chan string, tab []int, size int, i int) {
-	defer wg.Done()
+func produit(tab []int, size int, i int) string{
 	matprod := ""
+	// fmt.Println("start go routine ",i)
 	for j := 0; j < size; j++ {
 
 		sum := 0
@@ -148,8 +216,10 @@ func produit(ch chan string, tab []int, size int, i int) {
 		}
 		matprod = matprod + strconv.Itoa(sum) + " "
 	}
-	ch <- matprod
+	// fmt.Println("finished go routine ", i)
+	return matprod
 }
+
 
 func main() {
 	server := CreateServer(":3000")
