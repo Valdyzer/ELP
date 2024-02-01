@@ -12,7 +12,7 @@ import (
 )
 
 type WorkItem struct {
-	Row   int
+	Row        int
 	MatrixLine []int
 }
 
@@ -28,12 +28,10 @@ var wg sync.WaitGroup
 func worker(id int, jobs <-chan WorkItem, results chan<- ResultItem) {
 	for job := range jobs {
 		//fmt.Printf("Worker %d processing job at row %d\n", id, job.Row)
-		result := produit(mat,size,job.Row)
+		result := produit(mat, size, job.Row)
 		results <- ResultItem{Row: job.Row, Result: result}
 	}
 }
-
-
 
 func Byte_To_String(CONTENT []byte) []string {
 	dataByLine := strings.Split(string(CONTENT), "\n")
@@ -43,9 +41,9 @@ func Byte_To_String(CONTENT []byte) []string {
 	for i := 0; i < len(dataByLine); i++ {
 		line = strings.Split(dataByLine[i], " ")
 		for j := 0; j < len(line); j++ {
-			
+
 			res = append(res, line[j])
-		
+
 		}
 	}
 	return res
@@ -84,14 +82,7 @@ func Produit(tab []int) {
 	//fmt.Println(matprod)
 }
 
-<<<<<<< HEAD:GO/matrix_mult_no_tcp.go
-func produit(ch chan string, tab []int, size int, i int) {
-	defer wg.Done()
-	fmt.Print("start \n")
-
-=======
-func produit(tab []int, size int, i int) string{
->>>>>>> 1144890452b57c141910acbcae37fca6df4e088d:GO/concurrent_vs_groutines_no_server.go
+func produit(tab []int, size int, i int) string {
 	matprod := ""
 	// fmt.Println("start go routine ",i)
 	for j := 0; j < size; j++ {
@@ -104,23 +95,14 @@ func produit(tab []int, size int, i int) string{
 		}
 		matprod = matprod + strconv.Itoa(sum) + " "
 	}
-<<<<<<< HEAD:GO/matrix_mult_no_tcp.go
-	fmt.Print("end \n")
-	ch <- matprod
-=======
 	// fmt.Println("finished go routine ", i)
 	return matprod
->>>>>>> 1144890452b57c141910acbcae37fca6df4e088d:GO/concurrent_vs_groutines_no_server.go
 }
 
 func main() {
 
 	// Ouvrir le fichier en lecture seulement
-<<<<<<< HEAD:GO/matrix_mult_no_tcp.go
 	file, err := os.Open("matrice500.txt")
-=======
-	file, err := os.Open("{path_to_file}")
->>>>>>> 1144890452b57c141910acbcae37fca6df4e088d:GO/concurrent_vs_groutines_no_server.go
 	fmt.Println("\nOuverture du fichier", file.Name(), "...")
 	if err != nil {
 		fmt.Println("Erreur lors de l'ouverture du fichier :", err)
@@ -135,7 +117,6 @@ func main() {
 	}
 	defer file.Close()
 
-
 	data := Byte_To_String(content)
 	mat = String_To_Int(data)
 	fmt.Println("On effectue maintenant le produit d'une matrice de longueur", math.Sqrt(float64(len(mat))), "avec elle-même.")
@@ -146,14 +127,6 @@ func main() {
 	fmt.Println("Délai en concurrentiel :", fin.Sub(debut))
 	size = int(math.Sqrt(float64(len(mat))))
 	debut2 := time.Now()
-<<<<<<< HEAD:GO/matrix_mult_no_tcp.go
-	for i := 0; i < size; i++ {
-		//fmt.Print("start %v \n", i)
-		wg.Add(1) // ajoute 1 goroutine à attendre
-		go produit(p, mat, size, i)
-		prod = prod + "\n" + <-p
-		//fmt.Printf("end %v \n", i)
-=======
 	var numJobs = size
 	const numWorkers = 7
 
@@ -168,7 +141,6 @@ func main() {
 			defer wg.Done()
 			worker(workerID, jobs, results)
 		}(i)
->>>>>>> 1144890452b57c141910acbcae37fca6df4e088d:GO/concurrent_vs_groutines_no_server.go
 	}
 
 	// Decompose matrix in lines and add them to the jobs channel
@@ -176,8 +148,10 @@ func main() {
 
 	for i := 0; i < size; i++ {
 		//fmt.Println("Matrice line ",i,"=",mat[size*i:size*(i+1)])
-		if mat[size*i:size*(i+1)] == nil {fmt.Println(i)}
-		jobs <- WorkItem{Row: i, MatrixLine: mat[size*i:size*(i+1)]}
+		if mat[size*i:size*(i+1)] == nil {
+			fmt.Println(i)
+		}
+		jobs <- WorkItem{Row: i, MatrixLine: mat[size*i : size*(i+1)]}
 	}
 
 	// Close the jobs channel to signal that no more jobs will be added
@@ -200,9 +174,9 @@ func main() {
 
 	for i := 0; i < len(resultMatrix); i++ {
 		//fmt.Println(i)
-		if  resultMatrix[i] == "" {	
+		if resultMatrix[i] == "" {
 			print(i)
-		}else{
+		} else {
 			finalRes += resultMatrix[i] + "\n"
 		}
 	} // empêche l'exécution des lignes de code suivantes avant que toutes les goroutines se terminent
@@ -210,7 +184,7 @@ func main() {
 	fmt.Println("Délai en parallèle :", fin2.Sub(debut2), "\n")
 
 	// Création d'un fichier .txt et écriture du
-	f, err := os.Create({path_to_file})
+	f, err := os.Create("ProduitMat.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
