@@ -50,11 +50,32 @@ function pick6Letters(letters) {
     return letter_list
 }
 
+function que_faire() {
+    while (true) {
+        console.log("What do you want to do ? (select a number)\n 1 - write a new word ; \n 2 - turn a word into a new one ; \n 3 - pass")
+        var choice = prompt()
+        if (choice == "1") {
+            choice = "new word"
+            return choice
+        }          
+        else if (choice == "2") {
+            choice == "transform"
+            return choice
+        }
+        else if (choice == "3") {
+            choice = "pass"
+            return choice
+        }
+        else 
+        console.log("\nINCORRECT !!\n")
+    }
+}
+
 function userInput(text,player) {
     //works
     console.log(text);
     var input_check = false;
-    text = "Please enter a word: \n";
+    text = "Please enter a word : \n";
     while (input_check==false){
         console.log(text);
         var user_input = prompt();
@@ -133,15 +154,15 @@ function coup2Jarnac2() {
 }
 
 function turn(player) {
-    console.log("\n\nIt's player ",player,"'s turn!\n");
+    console.log("\n\nIt's player ", player, "'s turn!\n");
     player -= 1;
     player_letters[player] = pick6Letters()
-    console.log("You have 6 letters: ",player_letters[player]);
+    console.log("You have 6 letters: ", player_letters[player]);
     while (true) {
         console.log("Do you want to make a word ? (yes/no)")
         choice = prompt().toLowerCase()
         if (choice == "yes") {
-            let user_input = userInput("Make a word.",player_letters[player]);
+            let user_input = userInput("Make a word.", player_letters[player]);
             if (user_input[1]) { //if input is valid ==> add the word to grid and do rest of the play.
                 player_grid[player].push(user_input[0]);
                 console.log(player_grid[player]);
