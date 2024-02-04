@@ -201,7 +201,7 @@ function changeWord(player){
         return word_check;
     }
     for (let letter of old_word){//removes the letters that have already been played from the array, only new letters left 
-        if (new_word_sliced.includes(letter.toLowerCase())){
+        if (new_word_sliced.includes(letter.toLowerCase())) {
             const index = new_word_sliced.indexOf(letter.toLowerCase());
             new_word_sliced.splice(index,1);
         }
@@ -228,24 +228,34 @@ function exchange3Letters() {
 
 }
 
-function writeJarnac(array, player_to_jarnac, player) {
+function writeJarnac(array, player_to_jarnac, player, grid, num) {
     console.clear()
     player_letters[player_to_jarnac] = array
     console.log("Write a word with these letters : ", player_letters[player_to_jarnac])
     var user_input = prompt().toLowerCase()
+    split_word = user_input.split('');
+    if (grid == "yes") {
+        for (let letter of (player_grid[player_to_jarnac][num].toUpperCase())) {
+            if (user_input.includes(letter) == false) {
+                console.log("Invalid Entry. Please only use letters you have.\n");
+                return false;    
+            }
+        }
+    }
     var input_check = inputCheck(user_input, player_letters[player_to_jarnac], player_to_jarnac)
     if (input_check == true) {
         player_grid[player].push(user_input);
-        split_word = user_input.split('');
-        for (let letter of split_word) {
-                        console.log("Letters of split_word: ", letter);
-                        const index = player_letters[player_to_jarnac].indexOf(letter.toUpperCase());
-                        if (index > -1) {
-                            player_letters[player_to_jarnac].splice(index,1);
-                            console.log("removed letter from array: ", player_letters[player_to_jarnac])
-                        }
-                    }
+        for (letter of split_word) {
+            // si le nouveau mot comporte toutes les lettres de l'ancien alors continue et return true sinon return false
+            console.log("Letters of split_word: ", letter);
+            const index = player_letters[player_to_jarnac].indexOf(letter.toUpperCase());
+            if (index > -1) {
+                player_letters[player_to_jarnac].splice(index,1);
+                console.log("removed letter from array: ", player_letters[player_to_jarnac])
                 }
+        }
+    }
+    return true
 }
 
 function coupJarnac(player) {
@@ -261,20 +271,26 @@ function coupJarnac(player) {
             console.log("Do you need a word from the grid ? (yes/no)")
             grid = prompt().toLowerCase()
             if (grid == "yes") {
-                num = chooseWord(player_to_jarnac)
+                const num = chooseWord(player_to_jarnac)
                 word = (player_grid[player_to_jarnac][num].toUpperCase()).split('')
                 array = player_letters[player_to_jarnac].concat(word)
                 console.log(array)
                 prompt()
-                writeJarnac(array, player_to_jarnac, player)
+                valid = writeJarnac(array, player_to_jarnac, player, grid, num)
+                if (valid != true)
+                    return coupJarnac(player)
                 player_grid[player_to_jarnac].splice(num, 1)
             }
             else if (grid =="no") {
-                writeJarnac(player_letters[player_to_jarnac], player_to_jarnac, player)
-            }
+                valid = writeJarnac(player_letters[player_to_jarnac], player_to_jarnac, player, grid, 0)
+                if (valid != true)
+                    return coupJarnac(player)
+            }  
         }
         else {
-            writeJarnac(player_letters[player_to_jarnac], player_to_jarnac, player)
+            valid = writeJarnac(player_letters[player_to_jarnac], player_to_jarnac, player, grid, 0)
+            if (valid != true)
+            return coupJarnac(player)
         }
     }   
     else if (choice == "no") 
@@ -343,7 +359,11 @@ while (game_playing) {
     else {    
         coupJarnac(i);  
         turn(i);
-        passTurn();
+        if (player_grid[i].length == 7) {
+            // end_game
+            break
+        }
+        else {passTurn()}
     }
 }
 
