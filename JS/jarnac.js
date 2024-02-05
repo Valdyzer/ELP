@@ -230,8 +230,7 @@ function exchange3Letters() {
 
 function writeJarnac(array, player_to_jarnac, player, grid, num) {
     console.clear()
-    player_letters[player_to_jarnac] = array
-    console.log("Write a word with these letters : ", player_letters[player_to_jarnac])
+    console.log("Write a word with these letters : ", array)
     var user_input = prompt().toLowerCase()
     split_word = user_input.split('');
     if (grid == "yes") {
@@ -242,11 +241,11 @@ function writeJarnac(array, player_to_jarnac, player, grid, num) {
             }
         }
     }
+    player_letters[player_to_jarnac] = array
     var input_check = inputCheck(user_input, player_letters[player_to_jarnac], player_to_jarnac)
     if (input_check == true) {
         player_grid[player].push(user_input);
         for (letter of split_word) {
-            // si le nouveau mot comporte toutes les lettres de l'ancien alors continue et return true sinon return false
             console.log("Letters of split_word: ", letter);
             const index = player_letters[player_to_jarnac].indexOf(letter.toUpperCase());
             if (index > -1) {
@@ -274,8 +273,6 @@ function coupJarnac(player) {
                 const num = chooseWord(player_to_jarnac)
                 word = (player_grid[player_to_jarnac][num].toUpperCase()).split('')
                 array = player_letters[player_to_jarnac].concat(word)
-                console.log(array)
-                prompt()
                 valid = writeJarnac(array, player_to_jarnac, player, grid, num)
                 if (valid != true)
                     return coupJarnac(player)
@@ -300,7 +297,7 @@ function coupJarnac(player) {
 }
 
 
-function menu(player) {
+function menu(player) { 
     console.clear();
     player_choice = whatToDo(player);
 
@@ -339,12 +336,45 @@ function firstTurn(player) {
 }
 
 function turn(player) {
+    if (player_grid[player].length == 7) {
+        return
+    } 
     while (true){
         console.log("It's player ",player + 1,"'s turn!\n");
         new_letter = pickLetter();
         player_letters[player].push(new_letter)
         return menu(player);
         }
+}
+
+function endgame() {
+    var p
+    max = 0
+    winner = {}
+    for (p of player_grid) {
+        score = 0
+        for (m of p) {
+            if (m.length == 3)
+                score = score + 9
+            else if (m.length == 4)
+                score = score + 16
+            else if (m.length == 5)
+                score = score + 25
+            else if (m.length == 6)
+                score = score + 36
+            else if (m.length == 7)
+                score = score + 49
+            else if (m.length == 8)
+                score = score + 64
+            else if (m.length == 9)
+                score = score + 81
+        }
+        if (score > max)
+            winner = {p : score}
+    }
+    console.clear()
+    console.log("\n----------- GAME OVER -----------\n\n")
+    console.log("The winner is player", Object.keys(winner)[0]+1, " with a score of \n\n\n", winner.p)
 }
 
 while (game_playing) {
@@ -356,14 +386,14 @@ while (game_playing) {
         passTurn();
         first_turn_played = true;
     }
-    else {    
+    else {  
         coupJarnac(i);  
         turn(i);
         if (player_grid[i].length == 7) {
-            // end_game
+            endgame()
             break
-        }
-        else {passTurn()}
+        }  
+        passTurn()
     }
 }
 
